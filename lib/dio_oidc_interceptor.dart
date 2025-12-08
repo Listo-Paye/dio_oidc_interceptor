@@ -33,11 +33,12 @@ class OpenIdConfiguration {
   final Uri uri;
   final List<String> scopes;
 
-  OpenIdConfiguration(
-      {required this.clientId,
-      required this.clientSecret,
-      required this.uri,
-      required this.scopes});
+  OpenIdConfiguration({
+    required this.clientId,
+    required this.clientSecret,
+    required this.uri,
+    required this.scopes,
+  });
 }
 
 /// OpenId Interceptor for Dio
@@ -92,10 +93,7 @@ class OpenId extends Interceptor {
   /// Constructor for OpenId
   /// [configuration] is the OpenId configuration
   /// [dio] is the Dio instance to use
-  OpenId({
-    required this.configuration,
-    this.dio,
-  }) {
+  OpenId({required this.configuration, this.dio}) {
     _clock = const Clock();
   }
 
@@ -132,7 +130,9 @@ class OpenId extends Interceptor {
         await _setStorageValue(_refrshTokenField, tokens.refreshToken ?? "");
         await _setStorageValue(_tokenTypeField, tokens.tokenType ?? "Bearer");
         await _setStorageValue(
-            _expireTokenField, tokens.expiresAt?.toIso8601String() ?? "");
+          _expireTokenField,
+          tokens.expiresAt?.toIso8601String() ?? "",
+        );
       }
     }
   }
@@ -143,7 +143,9 @@ class OpenId extends Interceptor {
       _client = Client(
         issuer,
         configuration.clientId,
-        clientSecret: configuration.clientSecret,
+        clientSecret: configuration.clientSecret.isNotEmpty
+            ? configuration.clientSecret
+            : null,
       );
     }
     return _client!;
@@ -224,7 +226,9 @@ class OpenId extends Interceptor {
       await _setStorageValue(_refrshTokenField, tokens.refreshToken ?? "");
       await _setStorageValue(_tokenTypeField, tokens.tokenType ?? "Bearer");
       await _setStorageValue(
-          _expireTokenField, tokens.expiresAt?.toIso8601String() ?? "");
+        _expireTokenField,
+        tokens.expiresAt?.toIso8601String() ?? "",
+      );
     }
   }
 
@@ -260,8 +264,9 @@ class OpenId extends Interceptor {
     if (await _getStorageValue(_accessTokenField) == null) {
       return false;
     }
-    final expiresAt =
-        DateTime.tryParse(await _getStorageValue(_expireTokenField) ?? "");
+    final expiresAt = DateTime.tryParse(
+      await _getStorageValue(_expireTokenField) ?? "",
+    );
     if (expiresAt != null && expiresAt.isBefore(_clock.now())) {
       return false;
     }
@@ -273,8 +278,9 @@ class OpenId extends Interceptor {
       await login();
     }
 
-    final expiresAt =
-        DateTime.tryParse(await _getStorageValue(_expireTokenField) ?? "");
+    final expiresAt = DateTime.tryParse(
+      await _getStorageValue(_expireTokenField) ?? "",
+    );
     if (expiresAt != null && expiresAt.isBefore(_clock.now())) {
       await login();
     }
@@ -288,7 +294,9 @@ class OpenId extends Interceptor {
   /// Refresh the token if needed
   @override
   Future<void> onRequest(
-      RequestOptions options, RequestInterceptorHandler handler) async {
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final token = await _getAccessToken();
     final tokenType = await _getStorageValue(_tokenTypeField) ?? "Bearer";
     if (token != null) {
@@ -310,11 +318,7 @@ class OpenId extends Interceptor {
       var dio = Dio();
       var result = await dio.get(
         '${configuration.uri}/userinfo',
-        options: Options(
-          headers: {
-            "Authorization": '$tokenType $token',
-          },
-        ),
+        options: Options(headers: {"Authorization": '$tokenType $token'}),
       );
       return result.data;
     } catch (_) {

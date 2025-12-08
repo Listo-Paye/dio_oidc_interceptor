@@ -44,8 +44,10 @@ Future<Credential?> authenticate(
   var flow = makeFlow(client, scopes: scopes);
   window.localStorage['openid_client:state'] = flow.state;
 
-  var result =
-      await launchUrl(flow.authenticationUri, webOnlyWindowName: '_self');
+  var result = await launchUrl(
+    flow.authenticationUri,
+    webOnlyWindowName: '_self',
+  );
 
   if (!result) {
     throw Exception('Action annulée.');
@@ -68,8 +70,9 @@ Future<Credential> authenticateWithAuthorizationCode(
     'state': state,
     'session_state': sessionState,
     'iss': iss,
-    'client_secret': client.clientSecret!,
+    'client_secret': client.clientSecret ?? '',
   };
+  queryParameters.removeWhere((key, value) => value.isEmpty);
 
   BaseOptions options = BaseOptions(
     baseUrl: makeReturnUrl(),
@@ -81,8 +84,9 @@ Future<Credential> authenticateWithAuthorizationCode(
 
   var dio = Dio(options);
   var data = queryParameters.entries
-      .map((e) =>
-          '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+      .map(
+        (e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+      )
       .join('&');
 
   try {
@@ -112,8 +116,10 @@ Future<Credential> authenticateWithAuthorizationCode(
   }
 }
 
-Future<Credential?> getRedirectResult(Client client,
-    {List<String> scopes = const []}) async {
+Future<Credential?> getRedirectResult(
+  Client client, {
+  List<String> scopes = const [],
+}) async {
   return null;
 }
 
